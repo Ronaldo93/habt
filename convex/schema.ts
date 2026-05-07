@@ -3,6 +3,7 @@ import { v } from 'convex/values'
 
 export default defineSchema({
   habits: defineTable({
+    name: v.string(),
     isGood: v.boolean(),
     amountDone: v.number(),
     target: v.optional(v.number()),
