@@ -1,4 +1,6 @@
+import HabitList from '#/components/habits/HabitList'
 import { createFileRoute } from '@tanstack/react-router'
+import CreateHabit from '#/components/habits/CreateHabit'
 
 export const Route = createFileRoute('/habits')({
   component: RouteComponent,
@@ -12,8 +14,21 @@ function RouteComponent() {
   // create
 
   // manually log
+  
+
 
   return <div>
-    Habits
+    <div>Habits</div>
+
+    {/* following are stubs */}
+    {/* create habit */}
+    <div><CreateHabit /></div>
+
+    {/* view habits (not categorized yet) */}
+    <div>
+      <HabitList />
+
+
+    </div>
   </div>
 }
