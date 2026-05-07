@@ -10,5 +10,6 @@ export default defineSchema({
     duration: v.number(),
     // todo: this will be changed later to enum
     status: v.string(),
+    unit: v.string(),
   }),
 })
