@@ -9,21 +9,49 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Field, FieldGroup } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-
+import { useForm } from '@tanstack/react-form'
+import { useMutation } from 'convex/react'
+import { api } from "../../../convex/_generated/api"
+import { useState } from "react"
 
 export default function CreateHabit() {
-    return(
-<Dialog>
-      <form>
-        <DialogTrigger asChild>
-          <Button variant="outline">Open Dialog</Button>
-        </DialogTrigger>
+  const createHabitMutation = useMutation(api.habits.create)
+  const [open, setOpen] = useState(false)
 
-        {/* content */}
-        <DialogContent className="sm:max-w-sm">
+  const form = useForm({
+    defaultValues: {
+      name: '',
+      isGood: true,
+      amountDone: 0,
+      target: 1, // dummy value
+      notes: 'Dummy note', // dummy value
+      duration: 30, // dummy value
+      status: 'active',
+      unit: 'times',
+    },
+    onSubmit: async ({ value }) => {
+      await createHabitMutation(value)
+      setOpen(false)
+      form.reset()
+    },
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline">Open Dialog</Button>
+      </DialogTrigger>
+
+      <DialogContent className="sm:max-w-sm">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            form.handleSubmit()
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Create new habit</DialogTitle>
             <DialogDescription>
@@ -33,20 +61,46 @@ export default function CreateHabit() {
           </DialogHeader>
 
           {/* group */}
-          <FieldGroup>
-            <div>I want to </div> 
-            <div></div>
+          <FieldGroup className="flex flex-row items-center gap-2 my-4">
+            <span className="whitespace-nowrap">I want to</span> 
+            <form.Field
+              name="name"
+              validators={{
+                onChange: ({ value }) => !value ? 'A name is required' : undefined,
+              }}
+              children={(field) => (
+                <div className="flex-1 flex flex-col gap-1">
+                  <Input 
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    placeholder="do something..."
+                    required
+                  />
+                  {field.state.meta.errors ? (
+                    <em role="alert" className="text-red-500 text-xs">{field.state.meta.errors.join(', ')}</em>
+                  ) : null}
+                </div>
+              )}
+            />
           </FieldGroup>
 
           {/* footer */}
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => form.reset()}>Cancel</Button>
             </DialogClose>
-            <Button type="submit">Save changes</Button>
+            <form.Subscribe
+              selector={(state) => [state.canSubmit, state.isSubmitting]}
+              children={([canSubmit, isSubmitting]) => (
+                <Button type="submit" disabled={!canSubmit}>
+                  {isSubmitting ? "Saving..." : "Save changes"}
+                </Button>
+              )}
+            />
           </DialogFooter>
-        </DialogContent>
-      </form>
+        </form>
+      </DialogContent>
     </Dialog>
-    )
+  )
 }
