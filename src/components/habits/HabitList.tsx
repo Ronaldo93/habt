@@ -1,6 +1,13 @@
+import { useEffect } from "react";
 import { Card, CardTitle } from "../ui/card";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+
 
 export default function HabitList() {
+  // fetch - or use query?
+  const habits = useQuery(api.habits.get)
+  // map it
   return <div className="mx-20 ">
 
     {/* example of a card */}
