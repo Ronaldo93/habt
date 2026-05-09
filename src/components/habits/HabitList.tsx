@@ -1,26 +1,24 @@
-import { useEffect } from "react";
-import { Card, CardTitle } from "../ui/card";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-
+import { Card, CardContent, CardTitle } from "../ui/card";
+import LogHabitButton from "./JournalLogs";
 
 export default function HabitList() {
-  // fetch - or use query?
-  const habits = useQuery(api.habits.get)
-  // map it
-  return <div className="mx-20 ">
+  const habits = useQuery(api.habits.get);
 
-    {/* example of a card */}
-    {/* good one had green */}
-    <Card className="border-green-800/80 border-2 p-4">
-        {/* title */}
-        <CardTitle>Test habit</CardTitle>
-    </Card>
-    {/* bad one had red */}
-    <Card className="border-red-800/80 border-2 p-4">
-        {/* title */}
-        <CardTitle>Habit</CardTitle>
-    </Card>
-
-  </div>;
+  return (
+    <div className="mx-20 space-y-4 mt-8">
+      {habits?.map((habit) => (
+        <Card key={habit._id} className={`border-2 p-4 ${habit.isGood ? 'border-green-800/80' : 'border-red-800/80'}`}>
+          <CardTitle className="mb-2">{habit.name}</CardTitle>
+          <CardContent className="p-0 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Progress: <span className="font-medium text-foreground">{habit.amountDone}</span> / {habit.target || '∞'} {habit.unit}
+            </div>
+            <LogHabitButton habit={habit} />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
 }
