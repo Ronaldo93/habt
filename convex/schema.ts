@@ -5,7 +5,7 @@ export default defineSchema({
   habits: defineTable({
     name: v.string(),
     isGood: v.boolean(),
-    amountDone: v.number(),
+    amountDone: v.optional(v.number()), // Kept as optional for backwards compatibility
     target: v.optional(v.number()),
     notes: v.optional(v.string()),
     duration: v.number(),
@@ -13,4 +13,9 @@ export default defineSchema({
     status: v.string(),
     unit: v.string(),
   }),
+  habitEntries: defineTable({
+    habitId: v.id("habits"),
+    date: v.string(),
+    amountDone: v.number(),
+  }).index("by_habit_and_date", ["habitId", "date"]),
 })

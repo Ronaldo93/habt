@@ -4,7 +4,20 @@ import { v } from "convex/values";
 export const get = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("habits").collect();
+    const habits = await ctx.db.query("habits").collect();
+    const today = new Date().toLocaleDateString('en-CA'); // e.g. "2024-05-10"
+    
+    return await Promise.all(habits.map(async (habit) => {
+      const entry = await ctx.db
+        .query("habitEntries")
+        .withIndex("by_habit_and_date", (q) => q.eq("habitId", habit._id).eq("date", today))
+        .unique();
+        
+      return {
+        ...habit,
+        amountDone: entry?.amountDone ?? 0,
+      };
+    }));
   },
 });
 
@@ -12,7 +25,6 @@ export const create = mutation({
   args: {
     name: v.string(),
     isGood: v.boolean(),
-    amountDone: v.number(),
     target: v.optional(v.number()),
     notes: v.optional(v.string()),
     duration: v.number(),
@@ -23,7 +35,6 @@ export const create = mutation({
     return await ctx.db.insert("habits", {
       name: args.name,
       isGood: args.isGood,
-      amountDone: args.amountDone,
       target: args.target,
       notes: args.notes,
       duration: args.duration,
@@ -38,7 +49,6 @@ export const update = mutation({
     id: v.id("habits"),
     name: v.optional(v.string()),
     isGood: v.optional(v.boolean()),
-    amountDone: v.optional(v.number()),
     target: v.optional(v.number()),
     notes: v.optional(v.string()),
     duration: v.optional(v.number()),
@@ -55,5 +65,58 @@ export const remove = mutation({
   args: { id: v.id("habits") },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
+  },
+});
+
+export const logActivity = mutation({
+  args: {
+    habitId: v.id("habits"),
+    amount: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Get today's date in YYYY-MM-DD format based on system time
+    const today = new Date().toLocaleDateString('en-CA'); // e.g. "2024-05-10"
+
+    const existingEntry = await ctx.db
+      .query("habitEntries")
+      .withIndex("by_habit_and_date", (q) =>
+        q.eq("habitId", args.habitId).eq("date", today)
+      )
+      .unique();
+
+    if (existingEntry) {
+      await ctx.db.patch(existingEntry._id, {
+        amountDone: existingEntry.amountDone + args.amount,
+      });
+    } else {
+      await ctx.db.insert("habitEntries", {
+        habitId: args.habitId,
+        date: today,
+        amountDone: args.amount,
+      });
+    }
+  },
+});
+
+export const getEntries = query({
+  args: {
+    habitId: v.id("habits"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("habitEntries")
+      .withIndex("by_habit_and_date", (q) => q.eq("habitId", args.habitId))
+      .collect();
+  },
+});
+
+export const getTodayEntries = query({
+  args: {},
+  handler: async (ctx) => {
+    const today = new Date().toLocaleDateString('en-CA');
+    return await ctx.db
+      .query("habitEntries")
+      .filter((q) => q.eq(q.field("date"), today))
+      .collect();
   },
 });

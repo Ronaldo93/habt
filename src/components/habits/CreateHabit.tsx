@@ -24,7 +24,6 @@ export default function CreateHabit() {
     defaultValues: {
       name: '',
       isGood: true,
-      amountDone: 0,
       target: 1, // dummy value
       notes: 'Dummy note', // dummy value
       duration: 30, // dummy value

@@ -13,7 +13,6 @@ export function useHabitCreation() {
   const [formData, setFormData] = useState<HabitCreationData>({
     name: '',
     isGood: true,
-    amountDone: 0,
     target: undefined,
     notes: '',
     duration: 0,
@@ -37,7 +36,6 @@ export function useHabitCreation() {
       setFormData({
         name: '',
         isGood: true,
-        amountDone: 0,
         target: undefined,
         notes: '',
         duration: 0,

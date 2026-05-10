@@ -3,7 +3,6 @@ import z from "zod";
 export const habitSchema = z.object({
     name: z.string(),
     isGood: z.boolean(),
-    amountDone: z.number(),
     target: z.optional(z.number()),
     notes: z.optional(z.string()),
     duration: z.number(),

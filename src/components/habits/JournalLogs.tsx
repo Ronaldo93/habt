@@ -17,16 +17,16 @@ import {
 
 export default function LogHabitButton({ habit }: { habit: any }) {
   const [open, setOpen] = useState(false);
-  const updateHabit = useMutation(api.habits.update);
+  const logActivity = useMutation(api.habits.logActivity);
 
   const form = useForm({
     defaultValues: {
       amount: 0,
     },
     onSubmit: async ({ value }) => {
-      await updateHabit({
-        id: habit._id,
-        amountDone: habit.amountDone + value.amount,
+      await logActivity({
+        habitId: habit._id,
+        amount: value.amount,
       });
       setOpen(false);
       form.reset();
