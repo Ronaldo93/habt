@@ -21,6 +21,18 @@ export const get = query({
   },
 });
 
+// get one
+// export const getOneByHabitId = query({
+//   args: {
+//     id: v.id("habits")
+//   },
+//   handler: async (ctx, args) => {
+//     const habit = await ctx.db.get(args.id);
+//     if (!habit) return null;
+//     return habit;
+//   }
+// })
+
 export const create = mutation({
   args: {
     name: v.string(),

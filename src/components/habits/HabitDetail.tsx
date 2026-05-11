@@ -27,6 +27,9 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
 	const [open, setOpen] = useState(false);
 	const entries = useQuery(api.habits.getEntries, open ? { habitId: habit._id } : "skip");
 
+	// some metadata
+	// const habitMetadata = useQuery(api.habits.getOneByHabitId, open ? { id: habit._id } : "skip");
+
 	// Generate a range of dates between start and end
 	const getDatesInRange = (startDate: string, endDate: string) => {
 		const dates = [];
@@ -39,11 +42,11 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
 		return dates;
 	};
 
-	const startDate = habit.startDate || (entries && entries.length > 0 
+	const startDate = habit.startDate || (entries && entries.length > 0
 		? entries.reduce((min, e) => e.date < min ? e.date : min, entries[0].date)
 		: new Date().toISOString().split('T')[0]);
-	
-	const endDate = habit.endDate || (entries && entries.length > 0 
+
+	const endDate = habit.endDate || (entries && entries.length > 0
 		? entries.reduce((max, e) => e.date > max ? e.date : max, entries[0].date)
 		: new Date().toISOString().split('T')[0]);
 
@@ -54,16 +57,27 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
 		return acc;
 	}, {} as Record<string, number>) : {};
 
-	const xAmount = habit.target || 1;
+	// const xAmount = habit.target || 1;
 	let currentPrediction = 0;
 
+	// get the number of days between start and end (rounded to 1 digit)
+	let durationInDays = 1;
+	// condition since there is also duration in the old schema
+	if (habit.duration != undefined && habit.startDate !== undefined && habit.endDate !== undefined) {
+		durationInDays = Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)));
+	} else {
+		durationInDays = habit.duration;
+	}
+
+	const xAmount = parseFloat((Number(habit.target || 1) / durationInDays || 1).toFixed(1));
 	const chartData = allDates.map((date, index) => {
-		const amount = entriesByDate[date] || 0;
+		const amount = (entriesByDate[date] || 0) / habit.duration;
 		if (index === 0) {
 			currentPrediction = amount;
 		} else {
 			currentPrediction += habit.isGood ? xAmount : -xAmount;
 		}
+		currentPrediction = parseFloat(currentPrediction.toFixed(1));
 
 		return {
 			date,
@@ -100,7 +114,9 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
 										return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 									}}
 								/>
+								{/* y max should be the maximum between target and the maximum logged by user */}
 								<YAxis
+									domain={[0, (dataMax) => Math.max(dataMax, Number(habit.target) || 0)]}
 									yAxisId="left"
 									axisLine={false}
 									tickLine={false}
