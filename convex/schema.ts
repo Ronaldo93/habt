@@ -10,6 +10,9 @@ export default defineSchema({
     notes: v.optional(v.string()),
     duration: v.number(),
     // todo: this will be changed later to enum
+
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
     status: v.string(),
     unit: v.string(),
   }),

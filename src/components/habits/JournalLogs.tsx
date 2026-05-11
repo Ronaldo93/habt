@@ -19,9 +19,12 @@ export default function LogHabitButton({ habit }: { habit: any }) {
   const [open, setOpen] = useState(false);
   const logActivity = useMutation(api.habits.logActivity);
 
+  // setting the state
   const form = useForm({
     defaultValues: {
       amount: 0,
+      // startDate: new Date().toISOString().split('T')[0],
+      // endDate: new Date().toISOString().split('T')[0],
     },
     onSubmit: async ({ value }) => {
       await logActivity({
@@ -45,7 +48,7 @@ export default function LogHabitButton({ habit }: { habit: any }) {
             Enter the amount you've done. It will be added to your current progress ({habit.amountDone} {habit.unit}).
           </DialogDescription>
         </DialogHeader>
-        
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -82,6 +85,7 @@ export default function LogHabitButton({ habit }: { habit: any }) {
               </div>
             )}
           />
+
           <DialogFooter>
             <Button type="submit">Save changes</Button>
           </DialogFooter>

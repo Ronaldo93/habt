@@ -2,6 +2,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Card, CardContent, CardTitle } from "../ui/card";
 import LogHabitButton from "./JournalLogs";
+import HabitDetail from "./HabitDetail";
 
 export default function HabitList() {
   const habits = useQuery(api.habits.get);
@@ -15,7 +16,10 @@ export default function HabitList() {
             <div className="text-sm text-muted-foreground">
               Progress: <span className="font-medium text-foreground">{habit.amountDone}</span> / {habit.target || '∞'} {habit.unit}
             </div>
-            <LogHabitButton habit={habit} />
+            <div className="flex gap-2">
+              <HabitDetail habit={habit} />
+              <LogHabitButton habit={habit} />
+            </div>
           </CardContent>
         </Card>
       ))}
