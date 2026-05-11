@@ -27,24 +27,47 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
 	const [open, setOpen] = useState(false);
 	const entries = useQuery(api.habits.getEntries, open ? { habitId: habit._id } : "skip");
 
-	// Format data for Recharts
-	const sortedEntries = entries
-		? [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-		: [];
+	// Generate a range of dates between start and end
+	const getDatesInRange = (startDate: string, endDate: string) => {
+		const dates = [];
+		let currentDate = new Date(startDate);
+		const lastDate = new Date(endDate);
+		while (currentDate <= lastDate) {
+			dates.push(new Date(currentDate).toISOString().split('T')[0]);
+			currentDate.setDate(currentDate.getDate() + 1);
+		}
+		return dates;
+	};
+
+	const startDate = habit.startDate || (entries && entries.length > 0 
+		? entries.reduce((min, e) => e.date < min ? e.date : min, entries[0].date)
+		: new Date().toISOString().split('T')[0]);
+	
+	const endDate = habit.endDate || (entries && entries.length > 0 
+		? entries.reduce((max, e) => e.date > max ? e.date : max, entries[0].date)
+		: new Date().toISOString().split('T')[0]);
+
+	const allDates = getDatesInRange(startDate, endDate);
+
+	const entriesByDate = entries ? entries.reduce((acc, entry) => {
+		acc[entry.date] = entry.amountDone;
+		return acc;
+	}, {} as Record<string, number>) : {};
 
 	const xAmount = habit.target || 1;
 	let currentPrediction = 0;
 
-	const chartData = sortedEntries.map((entry, index) => {
+	const chartData = allDates.map((date, index) => {
+		const amount = entriesByDate[date] || 0;
 		if (index === 0) {
-			currentPrediction = entry.amountDone;
+			currentPrediction = amount;
 		} else {
 			currentPrediction += habit.isGood ? xAmount : -xAmount;
 		}
 
 		return {
-			date: entry.date,
-			amount: entry.amountDone,
+			date,
+			amount,
 			predicted: currentPrediction,
 		};
 	});
@@ -62,9 +85,7 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
 
 				<div className="mt-4 h-[300px] w-full">
 					{entries === undefined ? (
-						<div className="h-full flex items-center justify-center">Loading...</div>
-					) : chartData.length === 0 ? (
-						<div className="h-full flex items-center justify-cebg-slate-200ed-foreground">No data available for this habit yet.</div>
+						<div className="h-full flex items-center justify-center text-slate-700">Loading...</div>
 					) : (
 						<ResponsiveContainer width="100%" height="100%">
 							<ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
