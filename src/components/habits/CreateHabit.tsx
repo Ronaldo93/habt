@@ -16,14 +16,15 @@ import { useMutation } from 'convex/react'
 import { api } from "../../../convex/_generated/api"
 import { useState } from "react"
 
-export default function CreateHabit() {
+export default function CreateHabit({ initialIsGood = true }: { initialIsGood?: boolean }) {
   const createHabitMutation = useMutation(api.habits.create)
   const [open, setOpen] = useState(false)
 
   const form = useForm({
     defaultValues: {
       name: '',
-      isGood: true,
+      isGood: initialIsGood,
+      initialAmount: 0,
       target: 1, // dummy value
       notes: 'Dummy note', // dummy value
       duration: 30, // dummy value
@@ -49,7 +50,9 @@ export default function CreateHabit() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Open Dialog</Button>
+        <Button variant={initialIsGood ? "outline" : "destructive"}>
+          {initialIsGood ? "New Good Habit" : "New Bad Habit"}
+        </Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-sm">
@@ -61,105 +64,141 @@ export default function CreateHabit() {
           }}
         >
           <DialogHeader>
-            <DialogTitle>Create new habit</DialogTitle>
+            <DialogTitle>Create new {form.getFieldValue('isGood') ? 'good' : 'bad'} habit</DialogTitle>
             <DialogDescription>
-              Make changes to your profile here. Click save when you&apos;re
-              done.
+              {form.getFieldValue('isGood')
+                ? "Focus on building a positive routine."
+                : "Track and reduce a negative behavior."}
             </DialogDescription>
           </DialogHeader>
 
-          {/* group */}
-          <FieldGroup className="flex flex-row items-center gap-2 my-4">
-            <span className="whitespace-nowrap">I want to</span>
+          <div className="flex flex-col gap-4 my-4">
+            {/* Name Field */}
+            <FieldGroup className="flex flex-row items-center gap-2">
+              <span className="whitespace-nowrap">I want to</span>
+              <form.Field
+                name="name"
+                validators={{
+                  onChange: ({ value }) => !value ? 'A name is required' : undefined,
+                }}
+                children={(field) => (
+                  <div className="flex-1 flex flex-col gap-1">
+                    <Input
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      placeholder={form.getFieldValue('isGood') ? "read daily..." : "stop smoking..."}
+                      required
+                    />
+                    {field.state.meta.errors ? (
+                      <em role="alert" className="text-red-500 text-xs">{field.state.meta.errors.join(', ')}</em>
+                    ) : null}
+                  </div>
+                )}
+              />
+            </FieldGroup>
+
+            {/* Initial Amount Field */}
             <form.Field
-              name="name"
-              validators={{
-                onChange: ({ value }) => !value ? 'A name is required' : undefined,
-              }}
+              name="initialAmount"
               children={(field) => (
-                <div className="flex-1 flex flex-col gap-1">
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="initialAmount" className="text-sm font-medium">
+                    Initial amount done {form.getFieldValue('isGood') ? '(usually 0)' : ''}
+                  </label>
                   <Input
+                    id="initialAmount"
+                    type="number"
+                    min="0"
                     value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(e) => field.handleChange(Number(e.target.value))}
                     onBlur={field.handleBlur}
-                    placeholder="do something..."
-                    required
                   />
-                  {field.state.meta.errors ? (
-                    <em role="alert" className="text-red-500 text-xs">{field.state.meta.errors.join(', ')}</em>
-                  ) : null}
+                  <p className="text-[10px] text-muted-foreground">
+                    This will be recorded as your progress for today.
+                  </p>
                 </div>
               )}
             />
 
 
-          </FieldGroup>
+            <form.Field
+              name="target"
+              children={(field) => (
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="target" className="text-sm font-medium">
+                    Target amount to do {form.getFieldValue('isGood') ? '(usually 1)' : ''}
+                  </label>
+                  <Input
+                    id="target"
+                    type="number"
+                    min="0"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    onBlur={field.handleBlur}
+                  />
+                </div>
+              )}
+            />
 
+            <div className="grid grid-cols-2 gap-4">
+              <form.Field
+                name="startDate"
+                validators={{
+                  onChange: ({ value }) => !value ? 'Required' : undefined,
+                }}
+                children={(field) => (
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="startDate" className="text-sm font-medium">Start Date</label>
+                    <Input
+                      type="date"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      required
+                    />
+                    {field.state.meta.errors && (
+                      <em role="alert" className="text-red-500 text-xs">{field.state.meta.errors.join(', ')}</em>
+                    )}
+                  </div>
+                )}
+              />
 
-          <form.Field
-            name="startDate"
-            validators={{
-              onChange: ({ value }) => !value ? 'A start date is required' : undefined,
-            }}
-            children={(field) => (
-              <div className="flex-1 flex flex-col gap-1">
-                <label htmlFor="startDate">Start Date</label>
-                <Input
-                  type="date"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  placeholder="do something..."
-                  required
-                />
-                {field.state.meta.errors ? (
-                  // error message
-                  <em role="alert" className="text-red-500 text-xs">{field.state.meta.errors.join(', ')}</em>
-                ) : null}
-              </div>
-            )}
-          />
+              <form.Field
+                name="endDate"
+                validators={{
+                  onChange: ({ value }) => !value ? 'Required' : undefined,
+                }}
+                children={(field) => (
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="endDate" className="text-sm font-medium">End Date</label>
+                    <Input
+                      type="date"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      required
+                    />
+                    {field.state.meta.errors && (
+                      <em role="alert" className="text-red-500 text-xs">{field.state.meta.errors.join(', ')}</em>
+                    )}
+                  </div>
+                )}
+              />
+            </div>
+          </div>
 
-          <form.Field
-            name="endDate"
-            validators={{
-
-              onChange: ({ value }) => !value ? 'A end date is required' : undefined,
-            }}
-            children={(field) => (
-              <div className="flex-1 flex flex-col gap-1">
-                <label htmlFor="endDate">End Date</label>
-                <Input
-                  type="date"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  placeholder="do something..."
-                  required
-                />
-                {field.state.meta.errors ? (
-                  // error message
-                  <em role="alert" className="text-red-500 text-xs">{field.state.meta.errors.join(', ')}</em>
-                ) : null}
-              </div>
-            )}
-          />
-
-          {/* footer */}
           <DialogFooter>
-            {/* <DialogClose asChild>
-              <Button type="button" variant="outline" onClick={() => form.reset()}>Cancel</Button>
-            </DialogClose> */}
             <form.Subscribe
               selector={(state) => [state.canSubmit, state.isSubmitting, state.errors]}
               children={([canSubmit, isSubmitting, errors]) => (
-                <div className="flex flex-row gap-2">
+                <div className="flex flex-row gap-2 w-full justify-end">
                   {errors && <em role="alert" className="text-red-500 text-xs">{errors}</em>}
                   <DialogClose asChild>
                     <Button type="button" variant="outline" onClick={() => form.reset()}>Cancel</Button>
                   </DialogClose>
                   <Button type="submit" disabled={!canSubmit}>
-                    {isSubmitting ? "Saving..." : "Save changes"}
+                    {isSubmitting ? "Saving..." : "Create Habit"}
                   </Button>
                 </div>
               )}

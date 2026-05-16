@@ -44,9 +44,10 @@ export const create = mutation({
     endDate: v.optional(v.string()),
     status: v.string(),
     unit: v.string(),
+    initialAmount: v.number(),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("habits", {
+    const habitId = await ctx.db.insert("habits", {
       name: args.name,
       isGood: args.isGood,
       target: args.target,
@@ -56,7 +57,20 @@ export const create = mutation({
       endDate: args.endDate,
       status: args.status,
       unit: args.unit,
+      initialAmount: args.initialAmount,
     });
+
+    // we don't need to create an entry for the initial amount since we can't assume that user had done it in the beginning. they should log it manually.
+    // if (args.initialAmount > 0) {
+    //   const today = new Date().toLocaleDateString('en-CA');
+    //   await ctx.db.insert("habitEntries", {
+    //     habitId,
+    //     date: today,
+    //     amountDone: args.initialAmount,
+    //   });
+    // }
+
+    return habitId;
   },
 });
 

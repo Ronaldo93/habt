@@ -26,11 +26,17 @@ import type { Doc } from "../../../convex/_generated/dataModel";
 export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
 	const [open, setOpen] = useState(false);
 	const entries = useQuery(api.habits.getEntries, open ? { habitId: habit._id } : "skip");
+	const todayEntries = useQuery(api.habits.getTodayEntries, open ? {} : "skip");
+
+
+	// aggregate for current day
+	const todayEffort = todayEntries ? todayEntries.reduce((acc, entry) => acc + entry.amountDone, 0) : 0;
 
 	// some metadata
 	// const habitMetadata = useQuery(api.habits.getOneByHabitId, open ? { id: habit._id } : "skip");
 
-	// Generate a range of dates between start and end
+
+
 	const getDatesInRange = (startDate: string, endDate: string) => {
 		const dates = [];
 		let currentDate = new Date(startDate);
@@ -52,6 +58,9 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
 
 	const allDates = getDatesInRange(startDate, endDate);
 
+	// get today's index in the allDates array
+	const todayFromStart = allDates.indexOf(new Date().toISOString().split('T')[0]);
+
 	const entriesByDate = entries ? entries.reduce((acc, entry) => {
 		acc[entry.date] = entry.amountDone;
 		return acc;
@@ -69,11 +78,12 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
 		durationInDays = habit.duration;
 	}
 
-	const xAmount = parseFloat((Number(habit.target || 1) / durationInDays || 1).toFixed(1));
+	const effortNeedsDone = Number(habit.target || 1) - Number(habit.initialAmount || 0);
+	const xAmount = parseFloat((Number(effortNeedsDone) / (durationInDays || 1)).toFixed(1));
 	const chartData = allDates.map((date, index) => {
-		const amount = (entriesByDate[date] || 0) / habit.duration;
+		const amount = entriesByDate[date] || 0;
 		if (index === 0) {
-			currentPrediction = amount;
+			currentPrediction = habit.initialAmount || 0;
 		} else {
 			currentPrediction += habit.isGood ? xAmount : -xAmount;
 		}
@@ -155,6 +165,11 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
 							</ComposedChart>
 						</ResponsiveContainer>
 					)}
+				</div>
+
+				{/* are you on track or not */}
+				<div>
+					{todayEffort > xAmount * todayFromStart ? "You are on track" : "You are not on track"}
 				</div>
 			</DialogContent>
 		</Dialog>

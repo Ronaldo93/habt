@@ -22,7 +22,10 @@ function RouteComponent() {
 
     {/* following are stubs */}
     {/* create habit */}
-    <div><CreateHabit /></div>
+    <div className="flex flex-row gap-4 mb-8">
+      <CreateHabit initialIsGood={true} />
+      <CreateHabit initialIsGood={false} />
+    </div>
 
     {/* view habits (not categorized yet) */}
     <div>

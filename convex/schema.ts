@@ -15,6 +15,7 @@ export default defineSchema({
     endDate: v.optional(v.string()),
     status: v.string(),
     unit: v.string(),
+    initialAmount: v.optional(v.number()),
   }),
   habitEntries: defineTable({
     habitId: v.id("habits"),
