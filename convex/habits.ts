@@ -143,12 +143,16 @@ export const getEntries = query({
 });
 
 export const getTodayEntries = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    habitId: v.id("habits"),
+  },
+  handler: async (ctx, args) => {
     const today = new Date().toLocaleDateString('en-CA');
     return await ctx.db
       .query("habitEntries")
-      .filter((q) => q.eq(q.field("date"), today))
+      .withIndex("by_habit_and_date", (q) =>
+        q.eq("habitId", args.habitId).eq("date", today)
+      )
       .collect();
   },
 });

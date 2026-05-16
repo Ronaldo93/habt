@@ -101,10 +101,19 @@ export default function CreateHabit({ initialIsGood = true }: { initialIsGood?: 
             {/* Initial Amount Field */}
             <form.Field
               name="initialAmount"
+              validators={{
+                onChangeListenTo: ['target', 'isGood'],
+                onChange: ({ value, fieldApi }) => {
+                  const isGood = fieldApi.form.getFieldValue('isGood')
+                  const target = fieldApi.form.getFieldValue('target')
+                  if (isGood && value > target) return 'Initial amount cannot exceed target for a good habit'
+                  if (!isGood && value < target) return 'Initial amount cannot be less than target for a bad habit'
+                },
+              }}
               children={(field) => (
                 <div className="flex flex-col gap-1">
                   <label htmlFor="initialAmount" className="text-sm font-medium">
-                    Initial amount done {form.getFieldValue('isGood') ? '(usually 0)' : ''}
+                    Initial amount to be done today {form.getFieldValue('isGood') ? '(usually 0)' : ''}
                   </label>
                   <Input
                     id="initialAmount"
@@ -114,9 +123,13 @@ export default function CreateHabit({ initialIsGood = true }: { initialIsGood?: 
                     onChange={(e) => field.handleChange(Number(e.target.value))}
                     onBlur={field.handleBlur}
                   />
-                  <p className="text-[10px] text-muted-foreground">
-                    This will be recorded as your progress for today.
-                  </p>
+                  {field.state.meta.errors?.length ? (
+                    <em role="alert" className="text-red-500 text-xs">{field.state.meta.errors.join(', ')}</em>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground">
+                      This will be the initial threshold for today (and projection)
+                    </p>
+                  )}
                 </div>
               )}
             />
@@ -124,6 +137,15 @@ export default function CreateHabit({ initialIsGood = true }: { initialIsGood?: 
 
             <form.Field
               name="target"
+              validators={{
+                onChangeListenTo: ['initialAmount', 'isGood'],
+                onChange: ({ value, fieldApi }) => {
+                  const isGood = fieldApi.form.getFieldValue('isGood')
+                  const initialAmount = fieldApi.form.getFieldValue('initialAmount')
+                  if (isGood && initialAmount > value) return 'Target must be at least the initial amount for a good habit'
+                  if (!isGood && initialAmount < value) return 'Target must be at most the initial amount for a bad habit'
+                },
+              }}
               children={(field) => (
                 <div className="flex flex-col gap-1">
                   <label htmlFor="target" className="text-sm font-medium">
@@ -137,6 +159,9 @@ export default function CreateHabit({ initialIsGood = true }: { initialIsGood?: 
                     onChange={(e) => field.handleChange(Number(e.target.value))}
                     onBlur={field.handleBlur}
                   />
+                  {field.state.meta.errors?.length ? (
+                    <em role="alert" className="text-red-500 text-xs">{field.state.meta.errors.join(', ')}</em>
+                  ) : null}
                 </div>
               )}
             />
