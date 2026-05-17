@@ -9,6 +9,7 @@ export default function HabitList() {
 
   return (
     <div className="mx-20 space-y-4 mt-8">
+      {habits == null ? "Loading" : ""}
       {habits?.map((habit) => (
         <Card key={habit._id} className={`border-2 p-4 ${habit.isGood ? 'border-green-800/80' : 'border-red-800/80'}`}>
           <CardTitle className="mb-2">{habit.name}</CardTitle>
