@@ -16,6 +16,8 @@ import { useMutation } from 'convex/react'
 import { api } from "../../../convex/_generated/api"
 import { useState } from "react"
 
+import { Plus, MinusCircle, PlusCircle } from "lucide-react"
+
 export default function CreateHabit({ initialIsGood = true }: { initialIsGood?: boolean }) {
   const createHabitMutation = useMutation(api.habits.create)
   const [open, setOpen] = useState(false)
@@ -50,8 +52,13 @@ export default function CreateHabit({ initialIsGood = true }: { initialIsGood?: 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={initialIsGood ? "outline" : "destructive"}>
-          {initialIsGood ? "New Good Habit" : "New Bad Habit"}
+        <Button
+          className={`h-auto py-4 px-8 rounded-[2rem] text-white font-black uppercase tracking-wider text-sm transition-all hover:brightness-80 active:translate-y-[2px] active:border-b-0 ${initialIsGood
+            ? 'bg-green-500'
+            : 'bg-orange-500'
+            }`}
+        >
+          {initialIsGood ? "New Habit" : "New Challenge"}
         </Button>
       </DialogTrigger>
 

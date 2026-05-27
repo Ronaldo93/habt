@@ -29,8 +29,10 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
   const todayEntries = useQuery(api.habits.getTodayEntries, open ? { habitId: habit._id } : "skip");
 
 
+
   // aggregate for current day
   const todayEffort = todayEntries ? todayEntries.reduce((acc, entry) => acc + entry.amountDone, 0) : 0;
+
 
   // some metadata
   // const habitMetadata = useQuery(api.habits.getOneByHabitId, open ? { id: habit._id } : "skip");
