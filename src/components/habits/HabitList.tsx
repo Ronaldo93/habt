@@ -4,7 +4,7 @@ import LogHabitButton from "./JournalLogs";
 import HabitDetail from "./HabitDetail";
 import { Loader2 } from "lucide-react";
 import { stringToDate } from "#/utils/date";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format } from "date-fns";
 
 
 interface HabitListProps {
@@ -46,6 +46,11 @@ export default function HabitList({ habits: propHabits, isLoading }: HabitListPr
         const today = new Date();
         const startDate = stringToDate(habit.startDate);
         const endDate = stringToDate(habit.endDate);
+
+        // display end date only
+        const displayEndDate = format(endDate, 'MM/dd/yyyy');
+
+
 
 
         // TODO: implement the default server-side data filling if user don't specify end period
@@ -102,6 +107,9 @@ export default function HabitList({ habits: propHabits, isLoading }: HabitListPr
               <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${progress}%` }} />
               </div>
+
+              <p>{displayEndDate === "01/01/1970" ? "" : "Tracking end period:" + displayEndDate}</p>
+
             </div>
 
             <div className="flex flex-col gap-1 shrink-0">

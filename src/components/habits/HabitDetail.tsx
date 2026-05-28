@@ -19,7 +19,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
+  Cell,
 } from "recharts";
 import type { Doc } from "../../../convex/_generated/dataModel";
 
@@ -106,82 +106,242 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
     }
   }
 
+  const unit = habit.unit || "";
+
+  // has the tracking window closed? (today is past the set deadline)
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isConcluded = !!habit.endDate && todayStr > habit.endDate;
+
+  // did they ultimately hit the goal? cumulative actual vs. target
+  const totalLogged = entries ? entries.reduce((acc, e) => acc + e.amountDone, 0) : 0;
+  const finalValue = habit.isGood
+    ? Number(habit.initialAmount || 0) + totalLogged
+    : Number(habit.initialAmount || 0) - totalLogged;
+  const goalAchieved = habit.isGood
+    ? finalValue >= Number(habit.target || 0)
+    : finalValue <= Number(habit.target || 0);
+
+  // flat Duolingo-style palette
+  const barColor = habit.isGood ? "#58CC02" : "#FF9600";
+
+  // queries resolve asynchronously — until both are in, any status would be a guess
+  const isLoading = entries === undefined || todayEntries === undefined;
+
+  // pick the banner state: loading > concluded > on track > off pace
+  const status = isLoading
+    ? {
+        emoji: "⏳",
+        chip: "#E5E5E5",
+        border: "#E5E5E5",
+        bg: "#F7F7F7",
+        titleColor: "#AFAFAF",
+        title: "Crunching the numbers…",
+        subtitle: "Hang tight while we load your progress.",
+      }
+    : isConcluded
+    ? goalAchieved
+      ? {
+          emoji: "🏆",
+          chip: "#58CC02",
+          border: "#D7FFB8",
+          bg: "#F0FFE0",
+          titleColor: "#58A700",
+          title: "Goal complete!",
+          subtitle: "Tracking ended — you reached your target. Nice work!",
+        }
+      : {
+          emoji: "🏁",
+          chip: "#AFAFAF",
+          border: "#E5E5E5",
+          bg: "#F7F7F7",
+          titleColor: "#777777",
+          title: "Tracking ended",
+          subtitle: "This habit's window has closed.",
+        }
+    : isOnTrack
+      ? {
+          emoji: "💪",
+          chip: "#58CC02",
+          border: "#D7FFB8",
+          bg: "#F0FFE0",
+          titleColor: "#58A700",
+          title: "You're on track!",
+          subtitle: "Keep it up — you're ahead of the curve.",
+        }
+      : {
+          emoji: "👀",
+          chip: "#FF4B4B",
+          border: "#FFD6D6",
+          bg: "#FFF1F1",
+          titleColor: "#EA2B2B",
+          title: "Off the pace",
+          subtitle: "A little more today closes the gap.",
+        };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="secondary" size="sm">View Stats</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] bg-slate-200">
-        <DialogHeader>
-          <DialogTitle>{habit.name} Statistics</DialogTitle>
-          <DialogDescription>View detailed activity information about this habit over time.</DialogDescription>
+      <DialogContent className="sm:max-w-[560px] rounded-3xl border-2 border-[#E5E5E5] bg-white p-6 sm:p-7 text-[#4B4B4B]">
+        <DialogHeader className="space-y-1">
+          <span className="text-xs font-extrabold uppercase tracking-wide text-[#AFAFAF]">
+            {habit.isGood ? "Good habit" : "Bad habit"} · Stats
+          </span>
+          <DialogTitle className="text-2xl font-extrabold text-[#3C3C3C]">
+            {habit.name}
+          </DialogTitle>
+          <DialogDescription className="text-[#777777]">
+            Your daily effort vs. the pace you need.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4 h-[300px] w-full">
-          {entries === undefined ? (
-            <div className="h-full flex items-center justify-center text-slate-700">Loading...</div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                <XAxis
-                  dataKey="date"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: "black" }}
-                  tickFormatter={(val) => {
-                    const date = new Date(val);
-                    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                  }}
-                />
-                {/* y max should be the maximum between target and the maximum logged by user */}
-                <YAxis
-                  domain={[0, (dataMax) => Math.max(dataMax, Number(habit.target) || 0)]}
-                  yAxisId="left"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: "black" }}
-                />
-                {/* <YAxis
-									yAxisId="right"
-									orientation="right"
-									axisLine={false}
-									tickLine={false}
-									tick={{ fontSize: 12, fill: "white" }}
-								/> */}
-                <Tooltip
-                  cursor={{ fill: 'rgba(255,255,255,0.1)' }}
-                  contentStyle={{ backgroundColor: '#1E293B', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', color: 'white', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ color: 'white' }}
-                />
-                <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                <Bar
-                  yAxisId="left"
-                  name="Daily Amount"
-                  dataKey="amount"
-                  fill="#10b981"
-                  radius={[4, 4, 0, 0]}
-                />
-                <Line
-                  yAxisId="left"
-                  name="Predicted Trend"
-                  type="monotone"
-                  dataKey="predicted"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={false}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          )}
+        {/* status banner */}
+        <div
+          className="mt-5 flex items-center gap-3 rounded-2xl border-2 px-4 py-3"
+          style={{ borderColor: status.border, backgroundColor: status.bg }}
+        >
+          <span
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-xl"
+            style={{ backgroundColor: status.chip }}
+          >
+            {status.emoji}
+          </span>
+          <div className="leading-tight">
+            <p className="text-base font-extrabold" style={{ color: status.titleColor }}>
+              {status.title}
+            </p>
+            <p className="text-sm text-[#777777]">{status.subtitle}</p>
+          </div>
         </div>
 
-        {/* are you on track or not */}
-        <div>
-          {isOnTrack ? "You are on track" : "You are not on track"}
+        {/* stat tiles */}
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          <StatTile label="Today" value={isLoading ? "—" : todayEffort} unit={unit} color="#1CB0F5" shadow="#1899D6" />
+          <StatTile label="Goal" value={Number(habit.target || 0)} unit={unit} color="#CE82FF" shadow="#A560E8" />
+          <StatTile label="Per day" value={xAmount} unit={`${unit}/d`} color={barColor} shadow={habit.isGood ? "#58A700" : "#E08600"} />
+        </div>
+
+        {/* chart */}
+        <div className="mt-4 rounded-2xl border-2 border-[#E5E5E5] bg-[#F7F7F7] p-4">
+          <div className="mb-3 flex items-center gap-4 text-xs font-bold text-[#777777]">
+            <LegendDot color={barColor} label="Daily amount" />
+            <LegendDot color="#AFAFAF" label="Target pace" dashed />
+          </div>
+          <div className="h-[260px] w-full">
+            {entries === undefined ? (
+              <div className="flex h-full items-center justify-center text-sm font-bold text-[#AFAFAF]">
+                Loading your progress…
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="0" vertical={false} stroke="#E5E5E5" />
+                  <XAxis
+                    dataKey="date"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fontWeight: 700, fill: "#AFAFAF" }}
+                    tickFormatter={(val) => {
+                      const date = new Date(val);
+                      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    }}
+                  />
+                  <YAxis
+                    domain={[0, (dataMax: number) => Math.max(dataMax, Number(habit.target) || 0)]}
+                    yAxisId="left"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fontWeight: 700, fill: "#AFAFAF" }}
+                  />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                    contentStyle={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '16px',
+                      border: '2px solid #E5E5E5',
+                      color: '#3C3C3C',
+                      boxShadow: '0 4px 0 #E5E5E5',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                    }}
+                    labelStyle={{ color: '#AFAFAF', fontWeight: 800, marginBottom: 2 }}
+                    labelFormatter={(val) =>
+                      new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                    }
+                  />
+                  <Bar
+                    yAxisId="left"
+                    name="Daily amount"
+                    dataKey="amount"
+                    fill={barColor}
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={40}
+                  >
+                    {chartData.map((_, index) => (
+                      <Cell key={index} opacity={index === todayFromStart ? 1 : 0.55} />
+                    ))}
+                  </Bar>
+                  <Line
+                    yAxisId="left"
+                    name="Target pace"
+                    type="monotone"
+                    dataKey="predicted"
+                    stroke="#AFAFAF"
+                    strokeWidth={3}
+                    strokeDasharray="6 6"
+                    dot={false}
+                    activeDot={{ r: 5, fill: "#AFAFAF" }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function StatTile({
+  label,
+  value,
+  unit,
+  color,
+  shadow,
+}: {
+  label: string;
+  value: number | string;
+  unit: string;
+  color: string;
+  shadow: string;
+}) {
+  return (
+    <div
+      className="rounded-2xl bg-white px-3 py-3 text-center"
+      style={{ border: `2px solid ${color}`, borderBottomWidth: 4, borderBottomColor: shadow }}
+    >
+      <p className="text-[0.65rem] font-extrabold uppercase tracking-wide text-[#AFAFAF]">{label}</p>
+      <p className="mt-1 flex items-baseline justify-center gap-0.5">
+        <span className="text-2xl font-extrabold tabular-nums" style={{ color }}>{value}</span>
+      </p>
+      {unit && <p className="text-[0.65rem] font-bold text-[#AFAFAF]">{unit}</p>}
+    </div>
+  );
+}
+
+function LegendDot({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      {dashed ? (
+        <span
+          className="h-1 w-4 rounded-full"
+          style={{ backgroundImage: `repeating-linear-gradient(90deg, ${color} 0 5px, transparent 5px 9px)` }}
+        />
+      ) : (
+        <span className="h-3 w-3 rounded-md" style={{ backgroundColor: color }} />
+      )}
+      {label}
+    </span>
   );
 }
