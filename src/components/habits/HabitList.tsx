@@ -68,18 +68,35 @@ export default function HabitList({ habits: propHabits, isLoading }: HabitListPr
           ? Math.min(Math.max(differenceInDays(today, startDate) + 1, 0), period)
           : 1;
 
-        // cumulative amount that should be done by today, not across the whole period
-        const perDayRate = habit.target / period;
-        const todayTarget = Math.round(perDayRate * daysElapsed);
+        // the pace mark: where the user should be by today. it walks from
+        // initialAmount (the day-1 mark) to target across the duration. one
+        // formula both ways — direction falls out of the sign of (target - start).
+        const start = habit.initialAmount ?? 0;
+        const perDayRate = ((habit.target ?? 0) - start) / period;
+        const todayTarget = Math.round(start + perDayRate * daysElapsed);
 
-        // progress toward what should be done by today
-        const progress = todayTarget > 0
-          ? Math.min(100, Math.round((habit.amountDone / todayTarget) * 100))
-          : 0;
-        const isCompleted = progress >= 100;
+        // progress = how far the actual standing has moved toward today's pace mark.
+        // good habit: standing climbs from 0, compared against the pace mark.
+        // bad habit: standing descends from initialAmount; measure the drop achieved
+        //   vs. the drop the pace calls for so a declining goal still reads forward.
+        let progress: number;
+        if (habit.isGood) {
+          progress = todayTarget > 0
+            ? Math.round((habit.cumulativeAmount / todayTarget) * 100)
+            : 0;
+        } else {
+          const targetDrop = start - todayTarget;
+          const actualDrop = start - habit.cumulativeAmount;
+          progress = targetDrop > 0 ? Math.round((actualDrop / targetDrop) * 100) : 100;
+        }
+        progress = Math.min(100, Math.max(0, progress));
+        // a full bar is only a "win" for good habits. for a bad habit, hitting 100%
+        // means the limit was reached — never show the green completed treatment.
+        const isCompleted = progress >= 100 && habit.isGood;
         const isEnded = habit.endDate && habit.endDate < todayStr;
 
-        // bar color: muted when ended, green when done, else blue (good) / rose (bad)
+        // bar color: muted when ended, green when a good habit is done, else
+        // blue (good) / rose (bad). bad habits stay rose even at a full bar.
         const barColor = isEnded ? 'bg-slate-300' : isCompleted ? 'bg-green-500' : habit.isGood ? 'bg-blue-400' : 'bg-rose-400';
 
         return (
@@ -99,7 +116,7 @@ export default function HabitList({ habits: propHabits, isLoading }: HabitListPr
                   {habit.name}
                 </h3>
                 <span className="text-xs text-slate-400 shrink-0">
-                  {habit.amountDone} / {todayTarget || '∞'} {habit.unit}
+                  {habit.cumulativeAmount} / {todayTarget || '∞'} {habit.unit}
                 </span>
               </div>
 

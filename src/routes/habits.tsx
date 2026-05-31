@@ -20,9 +20,14 @@ function RouteComponent() {
   const active = habits?.filter(h => !h.endDate || h.endDate >= todayStr)
   const ended = habits?.filter(h => h.endDate && h.endDate < todayStr)
 
-  // daily summary: how many active habits are already done today
+  // daily summary: how many active habits have reached their goal. cumulativeAmount
+  // is the actual standing — good habits climb up to target, bad habits come down.
   const total = active?.length ?? 0
-  const done = active?.filter(h => h.amountDone >= (h.target || 1)).length ?? 0
+  const done = active?.filter(h =>
+    h.isGood
+      ? h.cumulativeAmount >= (h.target ?? 0)
+      : h.cumulativeAmount <= (h.target ?? 0)
+  ).length ?? 0
 
   return (
     <div className="page-wrap max-w-2xl mx-auto py-12 px-4 font-sans">

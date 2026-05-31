@@ -45,7 +45,7 @@ export default function LogHabitButton({ habit }: { habit: any }) {
         <DialogHeader>
           <DialogTitle>Log Habit: {habit.name}</DialogTitle>
           <DialogDescription>
-            Enter the amount you've done. It will be added to your current progress ({habit.amountDone} {habit.unit}).
+            Enter the amount you've done. It will be added to your current progress ({habit.cumulativeAmount ?? habit.amountDone} {habit.unit}).
           </DialogDescription>
         </DialogHeader>
 

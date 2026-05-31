@@ -80,17 +80,23 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
     durationInDays = habit.duration;
   }
 
-  const effortNeedsDone = Number(habit.target || 1) - Number(habit.initialAmount || 0);
-  const xAmount = parseFloat((Number(effortNeedsDone) / (durationInDays || 1)).toFixed(1));
+  // the pace line walks from initialAmount (the day-1 mark) to target across the
+  // duration. compute each point directly from its index rather than accumulating a
+  // rounded per-day step — accumulation compounds the rounding error over a long
+  // duration and drifts past target (e.g. ends at -1 instead of 0). interpolating
+  // against (length - 1) anchors the line: exactly paceStart on day 1, exactly
+  // target on the last date. direction falls out of the sign of (target - paceStart).
+  const paceStart = Number(habit.initialAmount || 0);
+  const target = Number(habit.target || 1);
+  const effortNeedsDone = target - paceStart;
+  // per-day slope, kept for the "Per day" stat tile (signed: < 0 when declining)
+  const xAmount = parseFloat((effortNeedsDone / (durationInDays || 1)).toFixed(1));
+  const lastIndex = Math.max(allDates.length - 1, 1);
   const chartData = allDates.map((date, index) => {
     const amount = entriesByDate[date] || 0;
-    if (index === 0) {
-      currentPrediction = habit.initialAmount || 0;
-    } else {
-      currentPrediction += habit.isGood == true ? xAmount : -xAmount;
-    }
-    currentPrediction = parseFloat(currentPrediction.toFixed(1));
-
+    currentPrediction = parseFloat(
+      (paceStart + effortNeedsDone * (index / lastIndex)).toFixed(1)
+    );
     return {
       date,
       amount,
@@ -98,13 +104,14 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
     };
   });
 
-  // are you on track or not
-  let isOnTrack = false;
-  if (todayEffort) {
-    if (todayEffort >= xAmount * todayFromStart) {
-      isOnTrack = true;
-    }
-  }
+  // on track? compare the actual standing against today's pace mark (the predicted
+  // line at today's index). good habits should be at/above it; bad habits at/below.
+  const totalLoggedSoFar = entries ? entries.reduce((acc, e) => acc + e.amountDone, 0) : 0;
+  const standingNow = habit.isGood ? totalLoggedSoFar : paceStart - totalLoggedSoFar;
+  const paceNow = todayFromStart >= 0 && chartData[todayFromStart]
+    ? chartData[todayFromStart].predicted
+    : paceStart;
+  const isOnTrack = habit.isGood ? standingNow >= paceNow : standingNow <= paceNow;
 
   const unit = habit.unit || "";
 
@@ -112,11 +119,11 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
   const todayStr = new Date().toISOString().split('T')[0];
   const isConcluded = !!habit.endDate && todayStr > habit.endDate;
 
-  // did they ultimately hit the goal? cumulative actual vs. target
+  // did they ultimately hit the goal? actual standing vs. target.
+  // good: effort climbed from 0 → standing = total logged, must reach target.
+  // bad: level came down from initialAmount → standing = initial − logged, must drop to target.
   const totalLogged = entries ? entries.reduce((acc, e) => acc + e.amountDone, 0) : 0;
-  const finalValue = habit.isGood
-    ? Number(habit.initialAmount || 0) + totalLogged
-    : Number(habit.initialAmount || 0) - totalLogged;
+  const finalValue = habit.isGood ? totalLogged : paceStart - totalLogged;
   const goalAchieved = habit.isGood
     ? finalValue >= Number(habit.target || 0)
     : finalValue <= Number(habit.target || 0);

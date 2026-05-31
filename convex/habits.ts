@@ -8,14 +8,27 @@ export const get = query({
     const today = new Date().toLocaleDateString('en-CA'); // e.g. "2024-05-10"
     
     return await Promise.all(habits.map(async (habit) => {
-      const entry = await ctx.db
+      // all entries for this habit — needed for the cumulative current value
+      const entries = await ctx.db
         .query("habitEntries")
-        .withIndex("by_habit_and_date", (q) => q.eq("habitId", habit._id).eq("date", today))
-        .unique();
-        
+        .withIndex("by_habit_and_date", (q) => q.eq("habitId", habit._id))
+        .collect();
+
+      const todayAmount = entries.find((e) => e.date === today)?.amountDone ?? 0;
+      const totalLogged = entries.reduce((acc, e) => acc + e.amountDone, 0);
+
+      // the user's actual standing, tracked against the pace line (which runs from
+      // initialAmount on day 1 to target at the end).
+      // good habit: effort climbs up from the start → standing = total logged.
+      // bad habit: level comes down from initialAmount → standing = initial − logged.
+      const cumulativeAmount = habit.isGood
+        ? totalLogged
+        : (habit.initialAmount ?? 0) - totalLogged;
+
       return {
         ...habit,
-        amountDone: entry?.amountDone ?? 0,
+        amountDone: todayAmount, // today's logged delta only
+        cumulativeAmount, // good: effort logged · bad: initialAmount − effort
       };
     }));
   },
