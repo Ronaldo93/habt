@@ -121,8 +121,9 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
     ? finalValue >= Number(habit.target || 0)
     : finalValue <= Number(habit.target || 0);
 
-  // flat Duolingo-style palette
+  // flat Duolingo-style palette + a lighter top stop for gradient bars
   const barColor = habit.isGood ? "#58CC02" : "#FF9600";
+  const barColorTop = habit.isGood ? "#7BE63E" : "#FFB13D";
 
   // queries resolve asynchronously — until both are in, any status would be a guess
   const isLoading = entries === undefined || todayEntries === undefined;
@@ -183,8 +184,29 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
       <DialogTrigger asChild>
         <Button variant="secondary" size="sm">View Stats</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[560px] rounded-3xl border-2 border-[#E5E5E5] bg-white p-6 sm:p-7 text-[#4B4B4B]">
-        <DialogHeader className="space-y-1">
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto overflow-x-hidden sm:max-w-[560px] rounded-[28px] border border-white/70 p-6 sm:p-7 text-[#4B4B4B]"
+        style={{
+          // grain (top layer) blended over the soft gradient (bottom layer)
+          backgroundColor: "#ffffff",
+          backgroundImage: `url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='140'%20height='140'%3E%3Cfilter%20id='n'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.9'%20numOctaves='4'%20stitchTiles='stitch'/%3E%3C/filter%3E%3Crect%20width='100%25'%20height='100%25'%20filter='url(%23n)'%20opacity='0.55'/%3E%3C/svg%3E"), linear-gradient(180deg, #ffffff 0%, #F6FBEF 100%)`,
+          backgroundBlendMode: "soft-light, normal",
+          boxShadow: `0 1px 0 rgba(255,255,255,0.9) inset, 0 24px 60px -12px ${barColor}40, 0 18px 40px rgba(23,58,64,0.18)`,
+        }}
+      >
+        {/* decorative color glow for depth */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full blur-3xl"
+          style={{ background: `radial-gradient(circle, ${barColorTop}55, transparent 70%)` }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-20 bottom-0 h-48 w-48 rounded-full blur-3xl"
+          style={{ background: `radial-gradient(circle, #1CB0F540, transparent 70%)` }}
+        />
+
+        <DialogHeader className="relative space-y-1 duration-500 animate-in fade-in slide-in-from-bottom-2">
           <span className="text-xs font-extrabold uppercase tracking-wide text-[#AFAFAF]">
             {habit.isGood ? "Good habit" : "Bad habit"} · Stats
           </span>
@@ -198,12 +220,27 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
 
         {/* status banner */}
         <div
-          className="mt-5 flex items-center gap-3 rounded-2xl border-2 px-4 py-3"
-          style={{ borderColor: status.border, backgroundColor: status.bg }}
+          className="relative mt-5 flex items-center gap-3 overflow-hidden rounded-2xl border px-4 py-3 duration-500 animate-in fade-in slide-in-from-bottom-2"
+          style={{
+            borderColor: status.border,
+            background: `linear-gradient(135deg, ${status.bg}, #ffffff 85%)`,
+            boxShadow: `0 1px 0 rgba(255,255,255,0.7) inset, 0 8px 20px -10px ${status.chip}80`,
+            animationDelay: "60ms",
+            animationFillMode: "both",
+          }}
         >
+          {/* soft colored accent strip */}
           <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-xl"
+            aria-hidden
+            className="absolute inset-y-0 left-0 w-1"
             style={{ backgroundColor: status.chip }}
+          />
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl shadow-sm"
+            style={{
+              background: `linear-gradient(145deg, color-mix(in oklab, ${status.chip} 65%, white), ${status.chip})`,
+              boxShadow: `0 4px 10px -2px ${status.chip}80`,
+            }}
           >
             {status.emoji}
           </span>
@@ -216,14 +253,20 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
         </div>
 
         {/* stat tiles */}
-        <div className="mt-4 grid grid-cols-3 gap-3">
+        <div
+          className="mt-4 grid grid-cols-3 gap-3 duration-500 animate-in fade-in slide-in-from-bottom-2"
+          style={{ animationDelay: "120ms", animationFillMode: "both" }}
+        >
           <StatTile label="Today" value={isLoading ? "—" : todayEffort} unit={unit} color="#1CB0F5" shadow="#1899D6" />
           <StatTile label="Goal" value={Number(habit.target || 0)} unit={unit} color="#CE82FF" shadow="#A560E8" />
           <StatTile label="Per day" value={xAmount} unit={`${unit}/d`} color={barColor} shadow={habit.isGood ? "#58A700" : "#E08600"} />
         </div>
 
         {/* chart */}
-        <div className="mt-4 rounded-2xl border-2 border-[#E5E5E5] bg-[#F7F7F7] p-4">
+        <div
+          className="relative mt-4 rounded-2xl border border-[#E5E5E5] bg-gradient-to-b from-white to-[#F4F8EE] p-4 shadow-sm duration-500 animate-in fade-in slide-in-from-bottom-2"
+          style={{ animationDelay: "180ms", animationFillMode: "both" }}
+        >
           <div className="mb-3 flex items-center gap-4 text-xs font-bold text-[#777777]">
             <LegendDot color={barColor} label="Daily amount" />
             <LegendDot color="#AFAFAF" label="Target pace" dashed />
@@ -236,6 +279,12 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={barColorTop} />
+                      <stop offset="100%" stopColor={barColor} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="0" vertical={false} stroke="#E5E5E5" />
                   <XAxis
                     dataKey="date"
@@ -274,12 +323,14 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
                     yAxisId="left"
                     name="Daily amount"
                     dataKey="amount"
-                    fill={barColor}
+                    fill="url(#barGradient)"
                     radius={[8, 8, 0, 0]}
                     maxBarSize={40}
+                    animationDuration={700}
+                    animationEasing="ease-out"
                   >
                     {chartData.map((_, index) => (
-                      <Cell key={index} opacity={index === todayFromStart ? 1 : 0.55} />
+                      <Cell key={index} opacity={index === todayFromStart ? 1 : 0.5} />
                     ))}
                   </Bar>
                   <Line
@@ -318,8 +369,14 @@ function StatTile({
 }) {
   return (
     <div
-      className="rounded-2xl bg-white px-3 py-3 text-center"
-      style={{ border: `2px solid ${color}`, borderBottomWidth: 4, borderBottomColor: shadow }}
+      className="rounded-2xl px-3 py-3 text-center transition-transform duration-200 hover:-translate-y-0.5"
+      style={{
+        border: `2px solid ${color}`,
+        borderBottomWidth: 4,
+        borderBottomColor: shadow,
+        background: `linear-gradient(160deg, #ffffff, color-mix(in oklab, ${color} 12%, white))`,
+        boxShadow: `0 1px 0 rgba(255,255,255,0.8) inset, 0 6px 14px -8px ${shadow}99`,
+      }}
     >
       <p className="text-[0.65rem] font-extrabold uppercase tracking-wide text-[#AFAFAF]">{label}</p>
       <p className="mt-1 flex items-baseline justify-center gap-0.5">
