@@ -6,7 +6,7 @@ export const get = query({
   handler: async (ctx) => {
     const habits = await ctx.db.query("habits").collect();
     const today = new Date().toLocaleDateString('en-CA'); // e.g. "2024-05-10"
-    
+
     return await Promise.all(habits.map(async (habit) => {
       // all entries for this habit — needed for the cumulative current value
       const entries = await ctx.db
@@ -16,6 +16,7 @@ export const get = query({
 
       const todayAmount = entries.find((e) => e.date === today)?.amountDone ?? 0;
       const totalLogged = entries.reduce((acc, e) => acc + e.amountDone, 0);
+      const isArchive = habit.isArchive
 
       // the user's actual standing, tracked against the pace line (which runs from
       // initialAmount on day 1 to target at the end).
@@ -29,6 +30,7 @@ export const get = query({
         ...habit,
         amountDone: todayAmount, // today's logged delta only
         cumulativeAmount, // good: effort logged · bad: initialAmount − effort
+        isArchive
       };
     }));
   },
@@ -70,6 +72,7 @@ export const create = mutation({
       endDate: args.endDate,
       status: args.status,
       unit: args.unit,
+      isArchive: false,
       initialAmount: args.initialAmount,
     });
 
@@ -169,3 +172,18 @@ export const getTodayEntries = query({
       .collect();
   },
 });
+
+export const updateArchive = mutation({
+  args: {
+    id: v.id("habits"),
+    status: v.boolean()
+  },
+  handler: async (ctx, args) => {
+    // update the task to be archived in habits table.
+    const habit = await ctx.db.get(args.id);
+    if (!habit) return;
+    await ctx.db.patch(args.id, {
+      isArchive: args.status,
+    });
+  }
+})

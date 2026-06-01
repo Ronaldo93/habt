@@ -17,8 +17,8 @@ function RouteComponent() {
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
   // a habit is "ended" once its end date is in the past; everything else is active
-  const active = habits?.filter(h => !h.endDate || h.endDate >= todayStr)
-  const ended = habits?.filter(h => h.endDate && h.endDate < todayStr)
+  const active = habits?.filter(h => !h.isArchive && (!h.endDate || h.endDate >= todayStr))
+  const ended = habits?.filter(h => h.isArchive || !h.endDate || h.endDate < todayStr)
 
   // daily summary: how many active habits have reached their goal. cumulativeAmount
   // is the actual standing — good habits climb up to target, bad habits come down.

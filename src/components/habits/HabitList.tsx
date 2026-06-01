@@ -1,10 +1,11 @@
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import LogHabitButton from "./JournalLogs";
 import HabitDetail from "./HabitDetail";
 import { Loader2 } from "lucide-react";
 import { stringToDate } from "#/utils/date";
 import { differenceInDays, format } from "date-fns";
+import { Button } from "../ui/button";
 
 
 interface HabitListProps {
@@ -15,6 +16,12 @@ interface HabitListProps {
 export default function HabitList({ habits: propHabits, isLoading }: HabitListProps = {}) {
   const queryHabits = useQuery(api.habits.get);
   const habits = propHabits !== undefined ? propHabits : queryHabits;
+  const updateArchiveStatus = useMutation(api.habits.updateArchive);
+
+  // handling on click
+  const handleArchiveClick = (habitId: string, status: boolean) => {
+    updateArchiveStatus({ id: habitId, status });
+  }
 
   if (isLoading || habits === undefined) {
     return (
@@ -93,12 +100,11 @@ export default function HabitList({ habits: propHabits, isLoading }: HabitListPr
         // a full bar is only a "win" for good habits. for a bad habit, hitting 100%
         // means the limit was reached — never show the green completed treatment.
         const isCompleted = progress >= 100 && habit.isGood;
-        const isEnded = habit.endDate && habit.endDate < todayStr;
+        const isEnded = (habit.endDate && habit.endDate < todayStr) || habit.isArchive;
 
         // bar color: muted when ended, green when a good habit is done, else
         // blue (good) / rose (bad). bad habits stay rose even at a full bar.
         const barColor = isEnded ? 'bg-slate-300' : isCompleted ? 'bg-green-500' : habit.isGood ? 'bg-blue-400' : 'bg-rose-400';
-
         return (
           <div
             key={habit._id}
@@ -124,14 +130,17 @@ export default function HabitList({ habits: propHabits, isLoading }: HabitListPr
               <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${progress}%` }} />
               </div>
-
               <p>{displayEndDate === "01/01/1970" ? "" : "Tracking end period:" + displayEndDate}</p>
-
             </div>
 
             <div className="flex flex-col gap-1 shrink-0">
               <HabitDetail habit={habit} />
               {!isEnded && <LogHabitButton habit={habit} />}
+              {/* archive function */}
+              <Button onClick={() => handleArchiveClick(habit._id, !habit.isArchive)}>
+                {habit.isArchive ? 'Unarchive' : 'Archive'}
+              </Button>
+
             </div>
           </div>
         );
