@@ -137,9 +137,12 @@ export default function HabitList({ habits: propHabits, isLoading }: HabitListPr
               <HabitDetail habit={habit} />
               {!isEnded && <LogHabitButton habit={habit} />}
               {/* archive function */}
-              <Button onClick={() => handleArchiveClick(habit._id, !habit.isArchive)}>
-                {habit.isArchive ? 'Unarchive' : 'Archive'}
+              {isEnded && !habit.isArchive ? <div></div> :
+
+                  <Button onClick={() => handleArchiveClick(habit._id, !habit.isArchive)}>
+              {habit.isArchive ? 'Unarchive' : 'Archive'}
               </Button>
+              }
 
             </div>
           </div>
