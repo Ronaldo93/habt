@@ -20,6 +20,8 @@ export default function HabitList({ habits: propHabits, isLoading }: HabitListPr
 
   // handling on click
   const handleArchiveClick = (habitId: string, status: boolean) => {
+    // status could be undefined
+    if (status === undefined) status = true;
     updateArchiveStatus({ id: habitId, status });
   }
 
@@ -139,9 +141,9 @@ export default function HabitList({ habits: propHabits, isLoading }: HabitListPr
               {/* archive function */}
               {isEnded && !habit.isArchive ? <div></div> :
 
-                  <Button onClick={() => handleArchiveClick(habit._id, !habit.isArchive)}>
-              {habit.isArchive ? 'Unarchive' : 'Archive'}
-              </Button>
+                <Button onClick={() => handleArchiveClick(habit._id, !habit.isArchive)}>
+                  {habit.isArchive ? 'Unarchive' : 'Archive'}
+                </Button>
               }
 
             </div>

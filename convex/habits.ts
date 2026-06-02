@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { format, parseISO } from "date-fns"
 
 export const get = query({
   args: {},
@@ -182,6 +183,13 @@ export const updateArchive = mutation({
     // update the task to be archived in habits table.
     const habit = await ctx.db.get(args.id);
     if (!habit) return;
+
+    const today = new Date().toLocaleDateString("en-CA");
+    // it could be assumed that the end date is also today if there is no such thing
+    // const endDate = habit.endDate ? parseISO(habit.endDate) : today;
+
+    // stops if deadline has already passed (today *after* endDate)
+    if (habit.endDate && habit.endDate < today) return;
     await ctx.db.patch(args.id, {
       isArchive: args.status,
     });

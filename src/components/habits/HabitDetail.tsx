@@ -115,8 +115,13 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
 
   const unit = habit.unit || "";
 
+
   // has the tracking window closed? (today is past the set deadline)
   const todayStr = new Date().toISOString().split('T')[0];
+
+
+  // has the task been archive if the habit is still available and archived
+  const isArchive = habit.isArchive && habit.endDate && todayStr < habit.endDate;
   const isConcluded = !!habit.endDate && todayStr > habit.endDate;
 
   // did they ultimately hit the goal? actual standing vs. target.
@@ -138,53 +143,63 @@ export default function HabitDetail({ habit }: { habit: Doc<"habits"> }) {
   // pick the banner state: loading > concluded > on track > off pace
   const status = isLoading
     ? {
-        emoji: "⏳",
-        chip: "#E5E5E5",
+      emoji: "⏳",
+      chip: "#E5E5E5",
+      border: "#E5E5E5",
+      bg: "#F7F7F7",
+      titleColor: "#AFAFAF",
+      title: "Crunching the numbers…",
+      subtitle: "Hang tight while we load your progress.",
+    }
+    : isArchive ?
+      {
+        emoji: "📦",
+        chip: "#AFAFAF",
         border: "#E5E5E5",
-        bg: "#F7F7F7",
-        titleColor: "#AFAFAF",
-        title: "Crunching the numbers…",
-        subtitle: "Hang tight while we load your progress.",
+        bg: "#F2F2F2",
+        titleColor: "#777777",
+        title: "Archived",
+        subtitle: "This habit is archived — tracking is paused.",
       }
-    : isConcluded
-    ? goalAchieved
-      ? {
-          emoji: "🏆",
-          chip: "#58CC02",
-          border: "#D7FFB8",
-          bg: "#F0FFE0",
-          titleColor: "#58A700",
-          title: "Goal complete!",
-          subtitle: "Tracking ended — you reached your target. Nice work!",
-        }
-      : {
-          emoji: "🏁",
-          chip: "#AFAFAF",
-          border: "#E5E5E5",
-          bg: "#F7F7F7",
-          titleColor: "#777777",
-          title: "Tracking ended",
-          subtitle: "This habit's window has closed.",
-        }
-    : isOnTrack
-      ? {
-          emoji: "💪",
-          chip: "#58CC02",
-          border: "#D7FFB8",
-          bg: "#F0FFE0",
-          titleColor: "#58A700",
-          title: "You're on track!",
-          subtitle: "Keep it up — you're ahead of the curve.",
-        }
-      : {
-          emoji: "👀",
-          chip: "#FF4B4B",
-          border: "#FFD6D6",
-          bg: "#FFF1F1",
-          titleColor: "#EA2B2B",
-          title: "Off the pace",
-          subtitle: "A little more today closes the gap.",
-        };
+      : isConcluded
+        ? goalAchieved
+          ? {
+            emoji: "🏆",
+            chip: "#58CC02",
+            border: "#D7FFB8",
+            bg: "#F0FFE0",
+            titleColor: "#58A700",
+            title: "Goal complete!",
+            subtitle: "Tracking ended — you reached your target. Nice work!",
+          }
+          : {
+            emoji: "🏁",
+            chip: "#AFAFAF",
+            border: "#E5E5E5",
+            bg: "#F7F7F7",
+            titleColor: "#777777",
+            title: "Tracking ended",
+            subtitle: "This habit's window has closed.",
+          }
+        : isOnTrack
+          ? {
+            emoji: "💪",
+            chip: "#58CC02",
+            border: "#D7FFB8",
+            bg: "#F0FFE0",
+            titleColor: "#58A700",
+            title: "You're on track!",
+            subtitle: "Keep it up — you're ahead of the curve.",
+          }
+          : {
+            emoji: "👀",
+            chip: "#FF4B4B",
+            border: "#FFD6D6",
+            bg: "#FFF1F1",
+            titleColor: "#EA2B2B",
+            title: "Off the pace",
+            subtitle: "A little more today closes the gap.",
+          };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

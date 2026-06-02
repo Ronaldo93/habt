@@ -18,7 +18,7 @@ function RouteComponent() {
 
   // a habit is "ended" once its end date is in the past; everything else is active
   const active = habits?.filter(
-    (h) => !h.endDate && !h.isArchive || h.endDate >= todayStr || h.isArchive === false,
+    (h) => h.isArchive === false || !h.endDate && !h.isArchive || h.endDate >= todayStr && !h.isArchive,
   );
   const ended = habits?.filter(
     (h) => h.isArchive || (h.endDate && h.endDate < todayStr),
