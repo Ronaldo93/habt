@@ -1,5 +1,5 @@
-import { defineSchema, defineTable } from 'convex/server'
-import { v } from 'convex/values'
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
 
 export default defineSchema({
   habits: defineTable({
@@ -10,19 +10,20 @@ export default defineSchema({
     notes: v.optional(v.string()),
     duration: v.number(),
     // todo: this will be changed later to enum
-    
-    streak: v.number(),
-    offStreak: v.number(),
+
+    streak: v.optional(v.number()),
+    offStreak: v.optional(v.number()),
     startDate: v.optional(v.string()),
     endDate: v.optional(v.string()),
     status: v.string(),
     unit: v.string(),
     initialAmount: v.optional(v.number()),
-    isArchive: v.optional(v.boolean())
+    isArchive: v.optional(v.boolean()),
   }),
   habitEntries: defineTable({
     habitId: v.id("habits"),
     date: v.string(),
     amountDone: v.number(),
   }).index("by_habit_and_date", ["habitId", "date"]),
-})
+});
+
